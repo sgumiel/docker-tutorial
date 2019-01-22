@@ -1,0 +1,42 @@
+version: "3"
+
+volumes:
+  dummydbvol:
+
+networks:
+  back-tier:
+
+services:
+  db:
+    image: mariadb:latest
+    container_name: dummydb
+    volumes:
+      - dummydbvol:/var/lib/mysql
+      - /home/sgumiel/github/db/schema:/docker-entrypoint-initdb.d      
+    networks:
+      - back-tier
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=mariadb
+    
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8081:8080
+    networks:
+      - back-tier
+
+  back:
+    image: dummyback:latest
+    container_name: dummyback
+    volumes:
+     - /home/sgumiel/github/config/docker:/config
+    ports:
+      - "8080:8080"
+    networks:
+      - back-tier
+    restart: on-failure
+    depends_on:
+      - db
