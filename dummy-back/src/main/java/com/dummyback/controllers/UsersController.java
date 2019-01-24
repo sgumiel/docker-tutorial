@@ -31,7 +31,7 @@ public class UsersController {
 	}
 	
 	@PostMapping("users")
-	public User saveUser(final User user) {
+	public User saveUser(@RequestBody final User user) {
 		
 		LOGGER.debug("Request for a new user");
 		final User u = this.usersRepository.save(user);
