@@ -1,0 +1,19 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: mariadb-users
+spec:
+  template:
+    metadata:
+      labels:
+        app: mariadb-users
+    spec:
+      containers:
+      - image: mariadb-users:1.0.0
+        name: mariadb-users
+        env:
+          # Use secret in real usage
+        - name: MYSQL_ROOT_PASSWORD
+          value: mariadb
+        ports:
+        - containerPort: 3306

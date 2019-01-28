@@ -1,9 +1,12 @@
 # Docker-tutorial
 
-En este tutorial vamos a ejecutar una aplicacion que consta de una base de dates de usuarios y un back con el que consultar estos usuarios y dar de alta nuevos usuarios.
-* En una primera aproximación la base de datos la levantaremos en un contenedor docker y la aplicacion back la ejecutaremos en local.
-* En una segunda aproximación tanto la base de datos como la aplicación las levantaremoss en un contenedor docker cada una (2 contendores).
+En este tutorial vamos a ejecutar una aplicación que consta de una base de dates de usuarios y un back con el que consultar estos usuarios y dar de alta nuevos usuarios.
+
+* En una primera aproximación la base de datos la levantaremos en un contenedor docker y la aplicación back la ejecutaremos en local.
+* En una segunda aproximación tanto la base de datos como la aplicación las levantaremos en un contenedor docker cada una (2 contenedores).
 * En una tercera aproximación levantaremos la base de datos y la aplicación con docker-compose.
+* En una cuarta aproximación levantaremos la base de datos en kubernetes y la aplicación en local
+* En una quinta aproximación levantaremos tanto la base de datos como el back en kubernetes.
 
 > Para la base de datos utilizaremos una imagen de la base de datos [MariaDB](https://mariadb.org/download/)
 
@@ -124,7 +127,7 @@ docker build -t dummyback .
 ```
 > Hemos creado una imagen con el tag 'dummyback'
 
-Arrancamos un contendor con la aplicación back.
+Arrancamos un contenedor con la aplicación back.
 ```shell
 docker run -d --name dummyback -p 8080:8080 --link dummydb:dummydb -v config/docker:/config dummyback
 ```
@@ -157,4 +160,61 @@ docker-compose up
 Para parar los contenedores ejecutar
 ```shell
 docker-compose down
+```
+
+## CUARTA APROXIMACIÓN
+(Levantaremos la base de datos en kubernetes y la aplicación en local)
+
+Lo primero que tenemos que hacer para empezar a usar kubernetes es hacer que docker apunte al registry de kubernetes, para eso lanzamos el siguiente comandos
+```shell
+eval $(minikube docker-env)
+```
+
+Para comprobar si se ja ejecutado correctamente, lazamos docker images. Deberiamos de ver imágenes de kubernetes.
+Construimos una nueva imagen de la base de datos y la tagueamos con la version 1.0.0. Nos colocamos en la carpeta docker-tutorial/db y lanzamos
+```shell
+docker build -t mariadb-users:1.0.0 .
+```
+
+Comprobamos que se haya creado con el comando
+```shell
+docker images
+```
+
+Para desplegar la base de datos en kubernetes utilizaremos los ficheros de despliegue. Nos movemos a la carpeta kubernetes-tutorial y lanzamos
+```shell
+kubectl create -f mariadb-users.yaml
+kubectl create -f mariadb-users-svc.yaml
+kubectl port-forward pods/mariadb-users-74c88cffb-rjvtd 3306:3306 &
+```
+> Para saber el identificador del pod dentro de kubernetes ejecutar kubectl get pods
+
+* Hacemos una petición GET a http://localhost:8080/users y nos debería devolver 3 usuarios.
+* Hacemos una petición POST a http://localhost:8080/users { name: "name", surname: "surname" }
+* Hacemos una petición GET a http://localhost:8080/users y nos debería devolver 4 usuarios.
+
+Borramos el servicio y el pod de base de datos con los comandos
+```shell
+kubectl delete -f mariadb-users-svc.yaml
+kubectl delete -f mariadb-users.yaml
+```
+
+Matamos también el proceso del port-forward (la única forma que se, debe de haber alguna con el comando kubectl)
+```shell
+netstat -putonl | grep 3306
+kill -9 proceso_id
+```
+
+Paramos también la aplicación back, y volvemos a levantarlo todo como antes.
+
+* Hacemos una petición GET a http://localhost:8080/users y nos debería devolver 3 usuarios.
+
+Esto ocurre porque no hemos usado ningún volumen persistente para la base de datos en kubernetes.
+
+## QUINTA APROXIMACIÓN
+(Levantaremos la base de datos y la aplicación en kubernetes)
+
+Creamos la imagen de la aplicación con el tag 1.0.0
+```shell
+docker build -t dummyback:1.0.0 .
 ```

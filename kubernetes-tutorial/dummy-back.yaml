@@ -1,0 +1,15 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: dummyback
+spec:
+  template:
+    metadata:
+      labels:
+        app: dummyback
+    spec:
+      containers:
+      - image: dummyback:1.0.0
+        name: dummyback
+        ports:
+        - containerPort: 8080
